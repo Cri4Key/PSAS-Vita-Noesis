@@ -12,20 +12,22 @@ def registerNoesisTypes():
 	handle = noesis.register("PSASBR Vita Model (w/ Skeleton)", ".cskn")
 	noesis.setHandlerTypeCheck(handle, psaVitamodCheckType)
 	noesis.setHandlerLoadModel(handle, psasVitaLoadSkn)
-	noesis.setHandlerWriteModel(handle, psasVitaWriteSkn)
-	noesis.setToolFlags(handle, noesis.NMSHAREDFL_REVERSEWINDING)
+	#noesis.setHandlerWriteModel(handle, psasVitaWriteSkn)
+	#noesis.setTypeSharedModelFlags(handle, noesis.NMSHAREDFL_REVERSEWINDING)
+	#noesis.setTypeSharedModelFlags(handle, noesis.NMSHAREDFL_FLATWEIGHTS_FORCE4)
 
 	handle = noesis.register("PSASBR Vita Model", ".cmdl")
 	noesis.setHandlerTypeCheck(handle, psaVitamodCheckType)
 	noesis.setHandlerLoadModel(handle, psasVitaLoadMdl)
-	noesis.setHandlerWriteModel(handle, psasVitaWriteMdl)
+	#noesis.setHandlerWriteModel(handle, psasVitaWriteMdl)
+	#noesis.setTypeSharedModelFlags(handle, noesis.NMSHAREDFL_REVERSEWINDING)
 
 	handle = noesis.register("PSASBR Vita Texture", ".ctxr")
 	noesis.setHandlerTypeCheck(handle, psaVitatexCheckType)
 	noesis.setHandlerLoadRGBA(handle, psaVitatexLoadRGBA)
 
 
-	noesis.logPopup()
+	#noesis.logPopup()
 
 	return 1
 
@@ -85,7 +87,7 @@ class psasVitaWriteClass:
 			if skel:
 				for vcmp in mesh.weights:
 					if vcmp.numWeights() > 4:
-						print("ERROR: Can't export a source model with more than 4 weights per vert.")
+						print("\nERROR: Can't export a source model with more than 4 weights per vert.")
 						return 0
 					meshesSize[5] += len(vcmp.indices)
 					meshesSize[6] += len(vcmp.weights)
@@ -269,6 +271,18 @@ class psasVitaWriteClass:
 
 		if meshesSize[5] != 0:
 			print("Writing blend indices...")
+			'''for mesh in mdl.meshes:
+				#print(mesh.flatWeightsPerVert)
+				if mesh.flatWeightsPerVert != 4:
+					#mesh.setFlatWeights(mesh.flatWeightIdx, mesh.flatWeightVal, 4)
+					print("DONE")
+				for vcmp in mesh.weights:
+					for i in range(0, 4):
+						if vcmp.numWeights() > i:
+							bs.writeUShort(vcmp.indices[i])
+						else:
+							bs.writeUShort(0)
+				pass'''
 			for mesh in mdl.meshes:
 				for vcmp in mesh.weights:
 					for i in range(0, 4):
@@ -292,7 +306,7 @@ class psasVitaWriteClass:
 
 		bs.setEndian(NOE_BIGENDIAN)
 
-		# TODO: Triangles have to be flipped as the format uses reversed triangle winding
+		print("Writing face indices...")
 		idxCount = 0
 		bs.writeInt(1)
 		for mesh in mdl.meshes:
@@ -300,7 +314,7 @@ class psasVitaWriteClass:
 		bs.writeInt(idxCount)
 		for mesh in mdl.meshes:
 			for idx in mesh.indices:
-				bs.writeShort(idx)
+				bs.writeUShort(idx)
 		return 1
 
 	def calcPadSize(self, size):
@@ -325,7 +339,7 @@ class psasVitaLoadClass:
 		self.skel = skel
 		self.texList     = []
 		self.matList     = []
-		#self.matEmis	 = []
+		self.matEmis	 = {}
 		self.boneList    = []
 		self.boneMap     = []
 		self.offsetList  = []
@@ -346,7 +360,7 @@ class psasVitaLoadClass:
 		bp = []
 		boneNameList = []
 
-		print("Loading bones at offset " + str(self.cmdlEnd))
+		#print("Loading bones at offset " + str(self.cmdlEnd))
 		boneHeader    = bs.read("6I")
 		boneMTXOff    = bs.tell() + bs.readUInt()
 		boneParOff    = bs.tell() + bs.readUInt()
@@ -359,8 +373,8 @@ class psasVitaLoadClass:
 		for a in range(0,parCount):
 			bp.append(bs.read("4b"))
 			#print(bp[a])
-		print(boneHeader)
-		print([boneMTXOff, boneParOff, boneOff3, boneOff4, boneOff5, boneOff6, boneNameOff])
+		#print(boneHeader)
+		#print([boneMTXOff, boneParOff, boneOff3, boneOff4, boneOff5, boneOff6, boneNameOff])
 		bs.seek(boneMTXOff, NOESEEK_ABS)
 		for a in range(0,boneHeader[4]):
 			m00, m01, m02, m03 = bs.read("4f")
@@ -375,7 +389,7 @@ class psasVitaLoadClass:
 			boneMtxList.append(boneMtx)
 		bs.seek(boneParOff, NOESEEK_ABS)
 		boneParList = bs.read(boneHeader[4] * "H")
-		print(boneParList)
+		#print(boneParList)
 		bs.seek(boneNameOff, NOESEEK_ABS)
 		bVer, bStart, bCount, bNull = bs.read("4I")
 		bNamebase = bs.tell()
@@ -427,9 +441,12 @@ class psasVitaLoadClass:
 		if(texPathDifference > 1):
 			texPathDifference -= 1
 			bs.seek(texPathDifference, NOESEEK_REL)
+		elif(texNameLength == 0):
+			print("Diffuse property path is empty, skipping...")
+			return 0
 		texName = noeStrFromBytes(bs.readBytes(texNameLength))
-		#texName = rapi.getExtensionlessName(texName.rsplit('/', 1)[1]) Throws an "index out of range" error with certain models
-		texName = rapi.getExtensionlessName(texName) # Whole path set to the material texture, an ugly solution but it works for now
+		texName = rapi.getExtensionlessName(texName.rsplit('/', 1)[1])
+		#texName = rapi.getExtensionlessName(texName)
 		print(texName)
 		material.setTexture(texName)
 
@@ -440,9 +457,12 @@ class psasVitaLoadClass:
 		if(texPathDifference > 1):
 			texPathDifference -= 1
 			bs.seek(texPathDifference, NOESEEK_REL)
+		elif(texNameLength == 0):
+			print("Normal property path is empty, skipping...")
+			return 0
 		texName = noeStrFromBytes(bs.readBytes(texNameLength))
-		#texName = rapi.getExtensionlessName(texName.rsplit('/', 1)[1]) Throws an "index out of range" error with certain models
-		texName = rapi.getExtensionlessName(texName) # Whole path set to the material texture, an ugly solution but it works for now
+		texName = rapi.getExtensionlessName(texName.rsplit('/', 1)[1])
+		#texName = rapi.getExtensionlessName(texName)
 		print(texName)
 		material.setNormalTexture(texName)
 
@@ -453,9 +473,12 @@ class psasVitaLoadClass:
 		if(texPathDifference > 1):
 			texPathDifference -= 1
 			bs.seek(texPathDifference, NOESEEK_REL)
+		elif(texNameLength == 0):
+			print("Specular property path is empty, skipping...")
+			return 0
 		texName = noeStrFromBytes(bs.readBytes(texNameLength))
-		#texName = rapi.getExtensionlessName(texName.rsplit('/', 1)[1]) Throws an "index out of range" error with certain models
-		texName = rapi.getExtensionlessName(texName) # Whole path set to the material texture, an ugly solution but it works for now
+		texName = rapi.getExtensionlessName(texName.rsplit('/', 1)[1])
+		#texName = rapi.getExtensionlessName(texName)
 		print(texName)
 		material.setSpecularTexture(texName)
 
@@ -466,9 +489,12 @@ class psasVitaLoadClass:
 		if(texPathDifference > 1):
 			texPathDifference -= 1
 			bs.seek(texPathDifference, NOESEEK_REL)
+		elif(texNameLength == 0):
+			print("Environment property path is empty, skipping...")
+			return 0
 		texName = noeStrFromBytes(bs.readBytes(texNameLength))
-		#texName = rapi.getExtensionlessName(texName.rsplit('/', 1)[1]) Throws an "index out of range" error with certain models
-		texName = rapi.getExtensionlessName(texName) # Whole path set to the material texture, an ugly solution but it works for now
+		texName = rapi.getExtensionlessName(texName.rsplit('/', 1)[1])
+		#texName = rapi.getExtensionlessName(texName)
 		print(texName)
 		material.setEnvTexture(texName)
 
@@ -479,11 +505,32 @@ class psasVitaLoadClass:
 		if(texPathDifference > 1):
 			texPathDifference -= 1
 			bs.seek(texPathDifference, NOESEEK_REL)
+		elif(texNameLength == 0):
+			print("Opacity property path is empty, skipping...")
+			return 0
 		texName = noeStrFromBytes(bs.readBytes(texNameLength))
-		#texName = rapi.getExtensionlessName(texName.rsplit('/', 1)[1]) Throws an "index out of range" error with certain models
-		texName = rapi.getExtensionlessName(texName) # Whole path set to the material texture, an ugly solution but it works for now
+		texName = rapi.getExtensionlessName(texName.rsplit('/', 1)[1])
+		#texName = rapi.getExtensionlessName(texName)
 		print(texName)
 		material.setOpacityTexture(texName)
+
+	def loadEmissionName(self, bs, material, skip, key):
+		texNameLength = bs.read("B")[0]
+		texPathDifference = skip - texNameLength
+		if(texPathDifference > 1):
+			texPathDifference -= 1
+			bs.seek(texPathDifference, NOESEEK_REL)
+		elif(texNameLength == 0):
+			print("Emission property path is empty, skipping...")
+			return 0
+		texName = noeStrFromBytes(bs.readBytes(texNameLength))
+		texName = rapi.getExtensionlessName(texName.rsplit('/', 1)[1])
+		#texName = rapi.getExtensionlessName(texName)
+		eMat = NoeMaterial(material.name + "_emis", texName)
+		#eMat.setBlendMode("GL_SRC_ALPHA", "GL_ONE_MINUS_SRC_ALPHA")
+		eMat.setBlendMode("GL_ONE", "GL_ONE")
+		eMat.setAlphaTest(0.5)
+		self.matEmis[key] = eMat
 
 	def loadMatInfo(self, bs):
 		print("Matoffs: " + str(bs.tell()))
@@ -496,19 +543,20 @@ class psasVitaLoadClass:
 			matName = "mat_" + str(a) + "_" + noeStrFromBytes(bs.readBytes(matNameSize))
 			print(matName)
 			material = NoeMaterial(matName, "")
-			#material.setBlendMode(4, 6)
 			bs.seek(0x25, NOESEEK_REL)
 			matElemCount = bs.read(">H")[0]
-			print(matElemCount)
+			#print(matElemCount)
 			for b in range(0, matElemCount):
 				matHash, matSkip = self.loadMatProp(bs)
 				if matHash in fvfMatLoaderDict:
 					fvfMatLoaderDict[matHash](self, bs, material, matSkip)
+				elif matHash == 0xE2C837AC: # Handles the emission map
+					self.loadEmissionName(bs, material, matSkip, a)
 				else:
 					#print("Offset: {} | To skip: {} | Buffer size: {}".format(bs.getOffset(), matSkip, bs.getSize()))
 					bs.seek(matSkip, NOESEEK_REL)
 			bs.seek(0x18, NOESEEK_REL)
-			print(bs.tell())
+			#print(bs.tell())
 			self.matList.append(material)
 			#if str(fvfTemp[a][4]) in fvfMatLoaderDict:
 			#	fvfMatLoaderDict[str()](self, fvfTemp[a], vertBuff)
@@ -520,7 +568,7 @@ class psasVitaLoadClass:
 		meshCount = bs.read(">I")[0]
 		for a in range(0,meshCount):
 			matInfo.append(self.MeshMatInfo(*bs.read(">6fHB4I")))
-			print("Material info: "+ str(matInfo[a]))
+			#print("Material info: "+ str(matInfo[a]))
 		bs.seek(0x4, NOESEEK_REL)
 		print(bs.tell())
 		self.cmdlEnd = bs.tell()
@@ -530,7 +578,6 @@ class psasVitaLoadClass:
 			bs.seek(self.cmdlEnd , NOESEEK_ABS)
 			if self.skel:
 				self.loadBones(bs)
-
 
 	def loadMeshs(self, bs, matInfo):
 		for b in range(0, len(self.meshFvf)):
@@ -543,27 +590,20 @@ class psasVitaLoadClass:
 				rapi.rpgBindPositionBuffer(dataBuff, unit, stride)
 			elif(self.meshFvf[b].magic == "0MRN"):
 				rapi.rpgBindNormalBuffer(dataBuff, unit, stride)
-				pass
 			elif(self.meshFvf[b].magic == "0NAT"):
 				rapi.rpgBindTangentBuffer(dataBuff, unit, stride)
-				pass
 			elif(self.meshFvf[b].magic == "0LOC"):
 				colData = bytearray(dataBuff)
 				for x in range(0, (self.meshFvf[b].fvfSize), 4):
-					colData[x] = dataBuff[x+3] #______AA
-					colData[x+1] = dataBuff[x+2] # ____BB__
-					colData[x+2] = dataBuff[x+1] # __GG____
-					colData[x+3] = dataBuff[x] #RR______
-					# Source: X-A, X+1-B, X+2-G, X+3-R
-					# Source: X-A, X+1-R, X+2-G, X+3-B
-					# Source : X-B, X+1-G, X+2-R, X+3-A
-					# Result: RGBA
+					colData[x] = dataBuff[x+3]
+					colData[x+1] = dataBuff[x+2]
+					colData[x+2] = dataBuff[x+1]
+					colData[x+3] = dataBuff[x]
 				rapi.rpgBindColorBuffer(colData, unit, stride, 4)
 			elif (self.meshFvf[b].magic == "0XET"):
 				rapi.rpgBindUV1Buffer(dataBuff, unit, stride)
 			elif (self.meshFvf[b].magic == "WNOB"):
 				rapi.rpgBindBoneWeightBuffer(dataBuff, unit, stride, 4)
-
 			elif (self.meshFvf[b].magic == "INOB"):
 				bs.seek(self.meshFvf[b].fvfOffset + 16, NOESEEK_ABS)
 				idxData = []
@@ -576,45 +616,15 @@ class psasVitaLoadClass:
 				dataBuff = struct.pack("<" + 'H'*len(idxData), *idxData)
 				rapi.rpgBindBoneIndexBuffer(dataBuff, unit, stride, 4)
 
-
-
-
 		for a in range(0, len(matInfo)):
-			print(matInfo[a])
+			#print(matInfo[a])
+			if matInfo[a].matID in self.matEmis.keys():
+				self.matList[matInfo[a].matID].setNextPass(self.matEmis[matInfo[a].matID])
 			rapi.rpgSetMaterial(self.matList[matInfo[a].matID].name)
 			bs.seek(self.idxBase + (2 * matInfo[a].faceStart), NOESEEK_ABS)
-			print("Index of the first face: " + str(bs.tell()))
+			#print("Index of the first face: " + str(bs.tell()))
 			faceBuff = rapi.swapEndianArray(bs.readBytes(2 * matInfo[a].faceCount), 2)
 			rapi.rpgCommitTriangles(faceBuff, noesis.RPGEODATA_USHORT, matInfo[a].faceCount, noesis.RPGEO_TRIANGLE, 1)
-
-	def loadEmissionName(self, bs, material, skip):
-		#tynext = material
-		texNameLength = bs.read("B")[0]
-		texPathDifference = skip - texNameLength
-		if(texPathDifference > 1):
-			texPathDifference -= 1
-			bs.seek(texPathDifference, NOESEEK_REL)
-		elif(texNameLength == 0):
-			return 0
-		texName = noeStrFromBytes(bs.readBytes(texNameLength))
-		#texName = rapi.getExtensionlessName(texName.rsplit('/', 1)[1]) Throws an "index out of range" error with certain models
-		texName = rapi.getExtensionlessName(texName) # Whole path set to the material texture, an ugly solution but it works for now
-		print(texName)
-		tynext = NoeMaterial(material.name + "_emission", texName)
-		#material.setBlendMode("GL_SRC_ALPHA", "GL_ONE_MINUS_SRC_ALPHA")
-		tynext.setBlendMode("GL_ONE", "GL_ONE")
-		tynext.setAlphaTest(0.5)
-		#print("Blend set")
-		#bs.seek(skip, NOESEEK_REL)
-		#material.setBlendMode("GL_SRC_ALPHA", "GL_ONE_MINUS_SRC_ALPHA")
-		self.matList.append(tynext)
-		material.setNextPass(tynext)
-
-	def loadAlphaTest(self, bs, material, skip):
-		print("Alpha test set")
-		alptst = bs.read("f")
-		material.setAlphaTest(alptst)
-
 
 
 	# MODL information
@@ -657,12 +667,7 @@ fvfMatLoaderDict = {
 	0xB70C80A5			: psasVitaLoadClass.loadNormalName,
 	0xD78D468F			: psasVitaLoadClass.loadSpecularName,
 	0x90FB6B27			: psasVitaLoadClass.loadEnvironmentName,
-	#0xE2C837AC			: psasVitaLoadClass.loadEmissionName,
-	0xA630DB97			: psasVitaLoadClass.loadOpacityName,
-	#0x0F54E3E4			: psasVitaLoadClass.loadBlend, #Probably blend flag? 4B set to 1
-	#0x7853D372			: psasVitaLoadClass.loadBlend, #Another one exclusive to blending materials, 4B set to 1
-	0x6DA1399C			: psasVitaLoadClass.loadAlphaTest #Another one, 0x32B07D7F
-
+	0xA630DB97			: psasVitaLoadClass.loadOpacityName
 
 	}
 
