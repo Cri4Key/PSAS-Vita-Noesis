@@ -13,7 +13,7 @@ Assets that you can open:
 * CMDL and CSKN models. All of them.
 
 * CTXR textures. However, not all of them are supported. Normal maps, UI and generally small textures won't be displayed correctly.
-	* If you want to extract textures from the game please refer to the [PSASBR Tool](https://github.com/Cri4Key/PSASBR-Tool) instead, which supports all the formats. The reason why this script has texture support is due to the code from the old script for handling textures which I decided to not delete.
+	* If you want to extract textures from the game please refer to the [PSASBR Tool](https://github.com/Cri4Key/PSASBR-Tool/releases/latest) instead, which supports all the formats. The reason why this script has texture support is due to the code from the old script for handling textures which I decided to not delete.
 
 The exporter script is also in development, which will allow modding on the game. More updates will come in the future for this script. Eventually, the script may handle even animations in future.
 
