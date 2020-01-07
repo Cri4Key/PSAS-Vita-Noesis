@@ -25,10 +25,10 @@ Improvements and fixes from the old script
 * Added support for vertex color
 * Added support for emissive materials
 * Added support for normal, specular, emissive and opacity textures for the materials
+* Added support for CMDL files (static models)
 * Fixed "Tried to set offset beyond buffer size.", the most frequent error preventing the vast majority of the models from being displayed or extracted
 * Fixed "KeyError: 3", thrown by unhandled vertex data for a modest amount of models
 * Fixed another couple of errors thrown by few models, dealing with texture naming and more unhandled data
-* Fixed skeleton button showing for CMDL models, as these are static models
 
 Known issues
 ================
