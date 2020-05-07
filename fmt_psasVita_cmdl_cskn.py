@@ -61,7 +61,7 @@ class psasVitaWriteClass:
 	def psasVitamodWriteModel(self, mdl, bs, skel):
 		print("\nCalculating sizes and offsets...")
 		# Order: POS0, NRM0, TAN0, COL0, TEX0, BONI, BONW
-		meshesSize = [0, 0, 0, 0, 0, 0, 0]
+		meshesSize = [0] * 7
 		meshesCount = 0
 		alignedSize = []
 		meshesOffs = []
@@ -87,7 +87,7 @@ class psasVitaWriteClass:
 			if skel:
 				for vcmp in mesh.weights:
 					if vcmp.numWeights() > 4:
-						print("\nERROR: Can't export a source model with more than 4 weights per vert.")
+						print("\nERROR: Can't export models using more than 4 weights per vert to CSKN")
 						return 0
 					meshesSize[5] += len(vcmp.indices)
 					meshesSize[6] += len(vcmp.weights)
@@ -371,21 +371,19 @@ class psasVitaLoadClass:
 		boneNameOff   = bs.tell() + bs.readUInt()
 		null00, null01, parCount = bs.read("3I")
 		for a in range(0,parCount):
-			bp.append(bs.read("4b"))
+			bp.append(bs.read("4B"))
 			#print(bp[a])
 		#print(boneHeader)
 		#print([boneMTXOff, boneParOff, boneOff3, boneOff4, boneOff5, boneOff6, boneNameOff])
 		bs.seek(boneMTXOff, NOESEEK_ABS)
 		for a in range(0,boneHeader[4]):
-			m00, m01, m02, m03 = bs.read("4f")
-			m10, m11, m12, m13 = bs.read("4f")
-			m20, m21, m22, m23 = bs.read("4f")
-			bonePos = NoeVec3([m10, m11, m12])
-			#boneUnk = NoeVec3([m20, m21, m22])
-			boneMtx = NoeQuat([m00, m01, m02, m03]).toMat43().inverse()
+			boneRot = NoeQuat.fromBytes(bs.readBytes(16))
+			bonePos = NoeVec3.fromBytes(bs.readBytes(12))
+			bs.seek(4, NOESEEK_REL)
+			boneScale = NoeVec3.fromBytes(bs.readBytes(12))
+			bs.seek(4, NOESEEK_REL)
+			boneMtx = boneRot.toMat43(1)
 			boneMtx[3] = bonePos
-			#boneMtx[2] = boneUnk
-			#print(boneMtx)
 			boneMtxList.append(boneMtx)
 		bs.seek(boneParOff, NOESEEK_ABS)
 		boneParList = bs.read(boneHeader[4] * "H")
@@ -608,7 +606,7 @@ class psasVitaLoadClass:
 				bs.seek(self.meshFvf[b].fvfOffset + 16, NOESEEK_ABS)
 				idxData = []
 				for a in range(0, (self.meshFvf[b].fvfSize // 8)):
-					f1, f2, f3, f4 = bs.read("4H")
+					f3, f2, f1, f4 = bs.read("4H")
 					idxData.append(f1)
 					idxData.append(f2)
 					idxData.append(f3)

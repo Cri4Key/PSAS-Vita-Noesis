@@ -30,6 +30,8 @@ Improvements and fixes from the old script
 * Added support for emissive materials
 * Added support for normal, specular, emissive and opacity textures for the materials
 * Added support for CMDL files (static models)
+* Fixed the rig loader: now all the rigs from the CSKN models will be loaded correctly, fixing the vast majority of models from the game
+	* E.g. Fat Princess and Kratos facial bones; Sly Cooper, Kat, Ratchet tail bones are now set; Nariko, Kat, Dante, Zeus hair bones are now in place, and many more
 * Fixed "Tried to set offset beyond buffer size.", the most frequent error preventing the vast majority of the models from being displayed or extracted
 * Fixed "KeyError: 3", thrown by unhandled vertex data for a modest amount of models
 * Fixed another couple of errors thrown by few models, dealing with texture naming and more unhandled data
@@ -38,8 +40,6 @@ Known issues
 ================
 * Models such as PaRappa's 3rd costume may appear "broken" for a reason or another, such as holes or weird transparencies where there shouldn't be. This is caused by not setting the right blending options for rendering, but the model is still being loaded correctly: that means you can export it to another format and use it elsewhere as you please and depending your rendering options it will work perfectly. This problem only affects the viewer in Noesis.
 	* The problem above also affects the emissive maps, such as in Ratchet's 2nd costume.
-
-* A small number of models (e.g. Kratos, Fat Princess) may have bones not positioned properly. This is a problem that still needs to be figured out. However, despite the positioning issue, such bones are still being aligned correctly to the right parts and will affect the model's movements as intended.
 
 * Sometimes the textures that a model uses from the game may not be matching: the game often uses the same texture with many different lightnings, and by default, a model could have different looking lightnings for the various texture it's using. One example I can think of is Kat's 3rd costume. It's quite normal and in such cases just swap for the same texture with a different lightning to make it look better. Everything you need is available from the game's assets.
 
