@@ -22,9 +22,9 @@ def registerNoesisTypes():
 	#noesis.setHandlerWriteModel(handle, psasVitaWriteMdl)
 	#noesis.setTypeSharedModelFlags(handle, noesis.NMSHAREDFL_REVERSEWINDING)
 
-	handle = noesis.register("PSASBR Vita Texture", ".ctxr")
+	'''handle = noesis.register("PSASBR Vita Texture", ".ctxr")
 	noesis.setHandlerTypeCheck(handle, psaVitatexCheckType)
-	noesis.setHandlerLoadRGBA(handle, psaVitatexLoadRGBA)
+	noesis.setHandlerLoadRGBA(handle, psaVitatexLoadRGBA)'''
 
 
 	#noesis.logPopup()
