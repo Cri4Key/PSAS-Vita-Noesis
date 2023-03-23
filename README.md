@@ -3,8 +3,6 @@ PlayStation All-Stars Battle Royale (PS Vita) - Noesis Plugin
 This is a plugin for Noesis created to handle the models from PSASBR (PS Vita). The importer is ready for displaying models and textures. The exporter is still a work in progress, as this script will be updated more.
 This is a NEW version that takes the work of the old PSASBR script and improves/fixes it. It can open ALL THE MODELS. Keep reading for more details.
 
-__The improvements and fixes brought to this new version should let you open ALL THE MODELS from the game, with no exception. If for some reason you find some model not working, please open an issue or get in touch with me on Twitter (@Cri4Key).__
-
 How to use
 ============
 In order to use this you need [Noesis by Rich Whitehouse](https://richwhitehouse.com/index.php?content=inc_projects.php&showproject=91). After that, just copy the script file in the folder in this path: YourNoesisFolder/plugins/python
